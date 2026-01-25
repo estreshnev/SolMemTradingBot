@@ -30,7 +30,8 @@ class SignalGenerator:
         )
 
         # Track tokens we've already signaled to avoid duplicates
-        self._signaled_tokens: set[str] = set()
+        # Load from DB to survive restarts
+        self._signaled_tokens: set[str] = self._load_signaled_tokens()
 
     def evaluate_curve_progress(self, event: CurveProgressEvent) -> Signal | None:
         """Evaluate a curve progress event for signal generation.
@@ -165,6 +166,18 @@ class SignalGenerator:
             return Decimal(str(event.market_cap_sol)) / total_supply
 
         return None
+
+    def _load_signaled_tokens(self) -> set[str]:
+        """Load already-signaled tokens from DB to survive restarts."""
+        try:
+            signals = self.storage.get_recent(hours=24, limit=10000)
+            tokens = {s.token_address for s in signals}
+            if tokens:
+                logger.info("loaded_signaled_tokens", count=len(tokens))
+            return tokens
+        except Exception as e:
+            logger.warning("failed_to_load_signaled_tokens", error=str(e))
+            return set()
 
     def get_signaled_tokens(self) -> set[str]:
         """Get set of tokens we've already signaled."""
