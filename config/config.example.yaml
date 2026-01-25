@@ -1,8 +1,8 @@
-# Bot Configuration
+# Raydium Signal Bot Configuration
 # Copy to config.yaml and customize
 #
 # IMPORTANT: All financial calculations use ACTUAL data only.
-# No estimates or fallbacks - if real price unavailable, value is null.
+# No estimates or fallbacks - if real data unavailable, value is null.
 
 mode: dry-run  # dry-run | devnet | mainnet
 log_level: INFO
@@ -13,29 +13,21 @@ webhook:
   secret: null  # Helius webhook secret (optional)
 
 rpc:
-  endpoints:
-    - "https://api.devnet.solana.com"
-    # Add more endpoints for failover
+  url: "https://api.mainnet-beta.solana.com"
   timeout_ms: 5000
   max_retries: 3
 
-# Signal generation filters - tune these based on paper trading results
+# Signal filtering thresholds
 filters:
-  min_liquidity_sol: 0.5       # Minimum SOL liquidity to consider
-  max_dev_holds_pct: 20.0      # Max % dev can hold (not yet implemented)
-  min_curve_progress_pct: 10.0 # Min bonding curve progress %
-  max_curve_progress_pct: 80.0 # Max bonding curve progress %
+  min_market_cap_usd: 10000     # MC > $10,000
+  min_volume_24h_usd: 5000      # 24h volume > $5,000
+  max_top10_holders_pct: 30     # Top 10 holders < 30%
+  min_liquidity_usd: 5000       # Liquidity > $5,000
+  max_pool_age_hours: 24        # Only new pools
 
-# Trade execution limits (for when real trading is enabled)
-limits:
-  max_sol_per_trade: 0.1       # Max SOL per single trade
-  max_daily_loss_sol: 1.0      # Daily loss limit
-  max_open_positions: 5        # Max concurrent positions
-
-# Paper trading signals - captures what we would buy/sell
-# Use this to validate strategy before enabling real trades
-signals:
-  enabled: true
-  db_path: "data/signals.db"
-  simulated_buy_sol: 0.1       # Simulated SOL per trade for PnL calc
-  expiry_hours: 24             # Mark old signals as expired
+# Telegram notifications
+telegram:
+  enabled: false
+  rate_limit_per_minute: 20
+  # bot_token and chat_id should be set via env vars:
+  # BOT_TELEGRAM_TOKEN and BOT_TELEGRAM_CHAT_ID

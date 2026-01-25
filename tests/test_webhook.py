@@ -1,3 +1,5 @@
+"""Tests for webhook server."""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,26 +18,16 @@ def client(settings: Settings) -> TestClient:
     return TestClient(app)
 
 
-def make_pump_tx(signature: str, tx_type: str = "SWAP", token: str = "TestTokenpump") -> dict:
-    """Create a valid Helius Pump.fun transaction for testing."""
+def make_raydium_tx(signature: str) -> dict:
+    """Create a Helius transaction for testing."""
     return {
         "signature": signature,
-        "type": tx_type,
-        "source": "PUMP_FUN",
+        "type": "SWAP",
+        "source": "RAYDIUM",
         "timestamp": 1706200000,
         "slot": 123456,
-        "feePayer": "TestCreator123",
-        "tokenTransfers": [
-            {
-                "mint": token,
-                "tokenAmount": 1000000.0,
-                "fromUserAccount": "seller",
-                "toUserAccount": "buyer",
-            }
-        ],
-        "nativeTransfers": [
-            {"amount": 100000000, "fromUserAccount": "buyer", "toUserAccount": "seller"}
-        ],
+        "tokenTransfers": [],
+        "nativeTransfers": [],
     }
 
 
@@ -53,7 +45,7 @@ class TestWebhookEndpoint:
         assert response.json()["processed"] == 0
 
     def test_single_transaction(self, client: TestClient) -> None:
-        payload = {"transactions": [make_pump_tx("test_sig_123")]}
+        payload = {"transactions": [make_raydium_tx("test_sig_123")]}
         response = client.post("/webhook", json=payload)
         assert response.status_code == 200
         assert response.json()["processed"] == 1
@@ -61,8 +53,8 @@ class TestWebhookEndpoint:
     def test_duplicate_transactions_deduplicated(self, client: TestClient) -> None:
         payload = {
             "transactions": [
-                make_pump_tx("dup_sig_001"),
-                make_pump_tx("dup_sig_001"),
+                make_raydium_tx("dup_sig_001"),
+                make_raydium_tx("dup_sig_001"),
             ]
         }
         response = client.post("/webhook", json=payload)
@@ -70,25 +62,9 @@ class TestWebhookEndpoint:
         assert result["processed"] == 1
         assert result["duplicates"] == 1
 
-    def test_non_pump_fun_ignored(self, client: TestClient) -> None:
-        """Transactions from other sources should be ignored."""
-        payload = {
-            "transactions": [
-                {
-                    "signature": "other_sig",
-                    "type": "SWAP",
-                    "source": "RAYDIUM",
-                    "tokenTransfers": [],
-                }
-            ]
-        }
-        response = client.post("/webhook", json=payload)
-        assert response.status_code == 200
-        assert response.json()["processed"] == 0
-
     def test_list_format_accepted(self, client: TestClient) -> None:
         """Helius sends raw list, not wrapped in dict."""
-        payload = [make_pump_tx("list_sig_001")]
+        payload = [make_raydium_tx("list_sig_001")]
         response = client.post("/webhook", json=payload)
         assert response.status_code == 200
         assert response.json()["processed"] == 1

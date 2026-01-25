@@ -1,3 +1,5 @@
+"""Configuration settings for Raydium Signal Bot."""
+
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
@@ -21,31 +23,28 @@ class WebhookConfig(BaseModel):
 
 
 class RPCConfig(BaseModel):
-    endpoints: list[str] = Field(default_factory=lambda: ["https://api.devnet.solana.com"])
+    url: str = "https://api.mainnet-beta.solana.com"
     timeout_ms: int = 5000
     max_retries: int = 3
 
 
 class FilterThresholds(BaseModel):
-    min_liquidity_sol: float = 0.0
-    max_dev_holds_pct: float = 100.0
-    min_curve_progress_pct: float = 0.0
-    max_curve_progress_pct: float = 100.0
+    """Filter thresholds for Raydium pool signals."""
+
+    min_market_cap_usd: float = 10000  # MC > $10,000
+    min_volume_24h_usd: float = 5000  # Volume > $5,000
+    max_top10_holders_pct: float = 30  # Top 10 holders < 30%
+    min_liquidity_usd: float = 5000  # Liquidity > $5,000
+    max_pool_age_hours: float = 24  # Only new pools
 
 
-class TradeLimits(BaseModel):
-    max_sol_per_trade: float = 0.1
-    max_daily_loss_sol: float = 1.0
-    max_open_positions: int = 5
+class TelegramConfig(BaseModel):
+    """Telegram bot configuration."""
 
-
-class SignalsConfig(BaseModel):
-    """Configuration for paper trading signals."""
-
-    enabled: bool = True
-    db_path: str = "data/signals.db"
-    simulated_buy_sol: float = 0.1  # SOL amount for simulated trades
-    expiry_hours: int = 24  # Mark signals expired after this time
+    enabled: bool = False
+    bot_token: str | None = None
+    chat_id: str | None = None
+    rate_limit_per_minute: int = 20
 
 
 class Settings(BaseSettings):
@@ -59,14 +58,15 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Secrets - loaded from env vars only, never from YAML
-    wallet_private_key: SecretStr | None = None
     helius_api_key: SecretStr | None = None
+    telegram_token: SecretStr | None = None
+    telegram_chat_id: str | None = None
+    rpc_url: str | None = None
 
     webhook: WebhookConfig = Field(default_factory=WebhookConfig)
     rpc: RPCConfig = Field(default_factory=RPCConfig)
     filters: FilterThresholds = Field(default_factory=FilterThresholds)
-    limits: TradeLimits = Field(default_factory=TradeLimits)
-    signals: SignalsConfig = Field(default_factory=SignalsConfig)
+    telegram: TelegramConfig = Field(default_factory=TelegramConfig)
 
     @classmethod
     def from_yaml(cls, path: Path) -> "Settings":

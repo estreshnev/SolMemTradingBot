@@ -1,10 +1,10 @@
+"""Base filter classes for signal filtering."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from src.models.events import BaseEvent
-
-T = TypeVar("T", bound=BaseEvent)
+T = TypeVar("T")
 
 
 @dataclass
