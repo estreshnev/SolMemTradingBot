@@ -23,8 +23,7 @@ Helius Webhook (Raydium pool) → Dexscreener (MC/Vol) → RPC (holders) → Fil
 - Pydantic (validation/settings)
 - structlog (JSON logging)
 - httpx (async HTTP client)
-- python-telegram-bot
-- SQLite (signal storage)
+- python-telegram-bot (planned)
 
 ## Commands
 
@@ -53,10 +52,6 @@ ngrok http 8000
 python scripts/setup_helius_webhook.py                      # List webhooks
 python scripts/setup_helius_webhook.py <url>                # Create webhook
 python scripts/setup_helius_webhook.py --delete <id>        # Delete webhook
-
-# View signals
-python scripts/view_signals.py
-python scripts/view_signals.py --recent 20
 ```
 
 ## Architecture
@@ -68,7 +63,7 @@ Helius Webhook (Raydium pool creation)
          ↓
     Pool Detection (src/webhook/)
          ↓
-    Data Enrichment (src/enrichment/)
+    Data Enrichment (src/enrichment/) [TODO]
     ├── Dexscreener API → MC, Volume, Age, Price
     └── RPC → Top 10 holders %
          ↓
@@ -79,7 +74,7 @@ Helius Webhook (Raydium pool creation)
          ↓
     Score Calculation
          ↓
-    Telegram Signal (src/telegram/)
+    Telegram Signal (src/telegram/) [TODO]
 ```
 
 ### Project Structure
@@ -89,16 +84,13 @@ Helius Webhook (Raydium pool creation)
 ├── .claude/           # Claude Code instructions and memory
 ├── config/            # YAML config (config.example.yaml)
 ├── docker/            # Dockerfile and docker-compose
-├── scripts/           # Utility scripts
+├── scripts/           # Utility scripts (setup_helius_webhook.py)
 ├── src/
 │   ├── config/        # Pydantic Settings, YAML loading
-│   ├── enrichment/    # Dexscreener + RPC data fetching (NEW)
-│   ├── filters/       # Signal filtering logic
-│   ├── models/        # Pydantic models
-│   ├── signals/       # Signal storage and tracking
-│   ├── telegram/      # Telegram bot integration (NEW)
+│   ├── filters/       # Signal filtering logic (base classes)
+│   ├── models/        # Pydantic models (RaydiumPoolCreated)
 │   ├── utils/         # Logging setup
-│   └── webhook/       # FastAPI server, Helius parsing
+│   └── webhook/       # FastAPI server, idempotency
 └── tests/             # pytest tests
 ```
 

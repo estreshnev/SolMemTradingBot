@@ -14,11 +14,11 @@
 - [x] Project scaffolding (pyproject.toml, src/ structure, Docker)
 - [x] Config system (Pydantic Settings, YAML loading)
 - [x] Webhook server (FastAPI POST /webhook endpoint)
-- [x] Helius payload parser (enhanced transaction format)
 - [x] Idempotency layer (tx_signature deduplication)
 - [x] Structured logging (structlog JSON)
 - [x] Test suite (pytest)
-- [x] CLI tools (view_signals.py, setup_helius_webhook.py)
+- [x] CLI tools (setup_helius_webhook.py)
+- [x] Code cleanup for Raydium focus
 
 ---
 
@@ -26,8 +26,8 @@
 
 **Goal**: Detect new Raydium pool creations via Helius webhook
 
-- [ ] Update Helius webhook to monitor Raydium program
-- [ ] Detect pool creation events (LP mint, initial liquidity)
+- [x] Configure Helius webhook for Raydium programs
+- [ ] Parse pool creation events from Helius payload
 - [ ] Extract token pair info (base token, quote token)
 - [ ] Extract pool address and initial liquidity
 - [ ] Store detected pools in SQLite
@@ -62,6 +62,8 @@
   - [ ] MC > $10,000
   - [ ] Volume > $5,000
   - [ ] Top 10 holders < 30%
+  - [ ] Liquidity > $5,000
+  - [ ] Pool age < 24h
 - [ ] Basic scoring system (weighted factors)
 - [ ] Score persistence for ML training data
 

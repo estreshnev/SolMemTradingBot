@@ -18,10 +18,10 @@ Persistent context for Claude Code sessions. Update this file when important dec
 
 ## Active Decisions
 
-- Config-driven: All thresholds/behavior in YAML/JSON, never hardcoded
+- Config-driven: All thresholds/behavior in YAML, never hardcoded
 - **Signal-only mode**: No auto-trading, just Telegram notifications
 - Idempotency via `tx_signature` to handle duplicate webhooks
-- **Secrets in .env only**: All API keys, private keys, RPC URLs → `.env` file (gitignored)
+- **Secrets in .env only**: All API keys, RPC URLs → `.env` file (gitignored)
 
 ## Critical: No Fallback Calculations
 
@@ -36,20 +36,20 @@ Persistent context for Claude Code sessions. Update this file when important dec
 ```
 Helius Webhook (Raydium pool creation)
          ↓
-    Pool Detection
+    Pool Detection (src/webhook/)
          ↓
-    Data Enrichment
+    Data Enrichment [TODO: src/enrichment/]
     ├── Dexscreener → MC, Volume, Age, Price
     └── RPC → Top 10 holders %
          ↓
-    Filters
+    Filters (src/filters/)
     ├── MC > $10,000
     ├── Volume > $5,000
     └── Top 10 holders < 30%
          ↓
     Score Calculation
          ↓
-    Telegram Signal
+    Telegram Signal [TODO: src/telegram/]
 ```
 
 ## External APIs
@@ -83,11 +83,25 @@ filters:
 
 **Single-instance design**: Personal use only. SQLite for storage. No need for horizontal scaling.
 
-## Key Files to Modify
+## Raydium Program IDs
 
-For the new direction, these files need updates:
-- `src/webhook/parser.py` - Detect Raydium instead of Pump.fun
-- `src/config/settings.py` - New filter thresholds
-- `src/signals/` - Repurpose for pool signals
-- New: `src/enrichment/` - Dexscreener + RPC data fetching
-- New: `src/telegram/` - Telegram bot integration
+- **AMM**: `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`
+- **CLMM**: `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK`
+
+## Current Project Structure
+
+```
+src/
+├── config/        # Settings (FilterThresholds, TelegramConfig)
+├── filters/       # BaseFilter, FilterChain, FilterResult
+├── models/        # HeliusWebhookPayload, RaydiumPoolCreated
+├── utils/         # Logging setup (structlog)
+└── webhook/       # FastAPI server, IdempotencyStore
+```
+
+## Next Steps (Stage 2)
+
+1. Implement Raydium pool detection parser
+2. Create `src/enrichment/` for Dexscreener + RPC
+3. Create `src/telegram/` for notifications
+4. Implement filters with new thresholds

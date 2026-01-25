@@ -1,7 +1,7 @@
 [project]
 name = "sol-mem-trading-bot"
 version = "0.1.0"
-description = "Solana memecoin trading bot for Pump.fun"
+description = "Solana memecoin signal bot - Raydium pool detection with Telegram notifications"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
