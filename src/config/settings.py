@@ -39,6 +39,15 @@ class TradeLimits(BaseModel):
     max_open_positions: int = 5
 
 
+class SignalsConfig(BaseModel):
+    """Configuration for paper trading signals."""
+
+    enabled: bool = True
+    db_path: str = "data/signals.db"
+    simulated_buy_sol: float = 0.1  # SOL amount for simulated trades
+    expiry_hours: int = 24  # Mark signals expired after this time
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="BOT_",
@@ -57,6 +66,7 @@ class Settings(BaseSettings):
     rpc: RPCConfig = Field(default_factory=RPCConfig)
     filters: FilterThresholds = Field(default_factory=FilterThresholds)
     limits: TradeLimits = Field(default_factory=TradeLimits)
+    signals: SignalsConfig = Field(default_factory=SignalsConfig)
 
     @classmethod
     def from_yaml(cls, path: Path) -> "Settings":

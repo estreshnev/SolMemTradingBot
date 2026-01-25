@@ -1,6 +1,6 @@
 # Project Roadmap
 
-## Stage 1: Helius Webhook Integration ← CURRENT
+## Stage 1: Helius Webhook Integration ✅ COMPLETE
 
 **Goal**: Receive and process Pump.fun events reliably
 
@@ -9,13 +9,36 @@
 - [x] Webhook server (FastAPI POST /webhook endpoint)
 - [x] Helius payload parser → structured events (placeholder, needs real payload analysis)
 - [x] Event models (TokenCreated, CurveProgress, Migration)
-- [ ] Basic filters (liquidity, dev holds, curve progress thresholds)
+- [x] Basic filters (liquidity, dev holds, curve progress thresholds)
 - [x] Idempotency layer (tx_signature deduplication)
 - [x] Structured logging (structlog JSON)
 - [x] Test suite (pytest, basic webhook tests)
 - [ ] Local testing (ngrok + devnet events)
 
 **Deliverable**: Bot logs all Pump.fun events with filtering applied
+
+---
+
+## Stage 1.5: Paper Trading Signals ← CURRENT
+
+**Goal**: Capture buy signals and track simulated PnL to validate strategy before real trading
+
+- [x] Signal models (Signal, SignalStatus, SignalOutcome)
+- [x] SQLite storage layer for signal persistence
+- [x] Signal generator (evaluates events against filters → generates buy signals)
+- [x] Outcome tracker (updates signals with migration/price data, calculates PnL)
+- [x] Integration with webhook handler (automatic signal processing)
+- [x] Config section for signals (enabled, db_path, simulated_buy_sol, expiry_hours)
+- [x] API endpoints for analysis (/signals/stats, /signals/recent)
+- [ ] Price polling for pending signals (periodic curve progress checks)
+- [ ] Analysis scripts/notebook for reviewing signal performance
+- [ ] Parameter optimization based on collected data
+
+**Deliverable**: Bot captures all trade signals, tracks outcomes, provides PnL analysis for strategy tuning
+
+**Endpoints**:
+- `GET /signals/stats` - Aggregate statistics (win rate, avg PnL, counts by status)
+- `GET /signals/recent?hours=24&limit=50` - Recent signals with outcomes
 
 ---
 

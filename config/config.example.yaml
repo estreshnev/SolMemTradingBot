@@ -26,3 +26,10 @@ limits:
   max_sol_per_trade: 0.1
   max_daily_loss_sol: 1.0
   max_open_positions: 5
+
+# Paper trading signals - captures what we would buy/sell
+signals:
+  enabled: true
+  db_path: "data/signals.db"
+  simulated_buy_sol: 0.1  # Simulated SOL per trade
+  expiry_hours: 24  # Mark old signals as expired
