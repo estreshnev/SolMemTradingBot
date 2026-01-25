@@ -1,1 +1,1 @@
-# Raydium Signal Bot
+# Solana Memecoin Signal Bot

@@ -1,7 +1,7 @@
 [project]
 name = "sol-mem-trading-bot"
 version = "0.1.0"
-description = "Solana memecoin signal bot - Raydium pool detection with Telegram notifications"
+description = "Solana memecoin signal bot - Dexscreener enrichment with configurable filters"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
@@ -11,7 +11,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "structlog>=24.4.0",
     "httpx>=0.28.0",
-    "solana>=0.35.0",
     "python-dotenv>=1.0.0",
 ]
 

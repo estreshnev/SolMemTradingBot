@@ -1,4 +1,4 @@
-"""Configuration settings for Raydium Signal Bot."""
+"""Configuration settings for Solana Memecoin Signal Bot."""
 
 from enum import Enum
 from functools import lru_cache

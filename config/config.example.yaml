@@ -1,8 +1,8 @@
-# Pump.fun Migration Signal Bot Configuration
+# Solana Memecoin Signal Bot Configuration
 # Copy to config.yaml and customize
 #
-# IMPORTANT: All data comes from Dexscreener API.
-# No fallback/estimated values - if data unavailable, signal is skipped.
+# Current: Pump.fun migrations | Future: BONK, BAGS, others
+# All data from Dexscreener API - no fallback values
 
 mode: dry-run  # dry-run | devnet | mainnet
 log_level: INFO
@@ -24,9 +24,8 @@ dexscreener:
   timeout_seconds: 10.0
   max_retries: 3
 
-# Telegram notifications (coming soon)
+# Telegram notifications
 telegram:
   enabled: false
   rate_limit_per_minute: 20
-  # bot_token and chat_id should be set via env vars:
-  # BOT_TELEGRAM_TOKEN and BOT_TELEGRAM_CHAT_ID
+  # Set via env vars: BOT_TELEGRAM_TOKEN, BOT_TELEGRAM_CHAT_ID

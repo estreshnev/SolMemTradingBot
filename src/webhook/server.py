@@ -284,7 +284,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.info("server_stopping")
 
     app = FastAPI(
-        title="Pump.fun Migration Signal Bot",
+        title="Solana Memecoin Signal Bot",
         version="0.1.0",
         lifespan=lifespan,
     )
