@@ -1,1 +1,1 @@
-# Sol Mem Trading Bot
+# Raydium Signal Bot
