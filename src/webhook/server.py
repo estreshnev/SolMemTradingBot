@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from decimal import Decimal
 from pathlib import Path
@@ -24,6 +25,10 @@ logger = get_logger(__name__)
 
 class WebhookHandler:
     """Handles incoming Helius webhooks."""
+
+    signal_storage: SignalStorage | None
+    signal_generator: SignalGenerator | None
+    outcome_tracker: OutcomeTracker | None
 
     def __init__(
         self,
@@ -113,6 +118,10 @@ class WebhookHandler:
         if not self.signals_enabled:
             return None
 
+        # Type narrowing for mypy - these are guaranteed non-None when signals_enabled
+        assert self.signal_generator is not None
+        assert self.outcome_tracker is not None
+
         # Handle based on event type
         if event.event_type == EventType.CURVE_PROGRESS:
             assert isinstance(event, CurveProgressEvent)
@@ -137,7 +146,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         setup_logging(log_level=settings.log_level, json_format=True)
         logger.info(
             "server_starting",

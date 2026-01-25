@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -181,7 +181,7 @@ class SignalStorage:
 
     def get_recent(self, hours: int = 24, limit: int = 100) -> list[Signal]:
         """Get recent signals within the specified hours."""
-        cutoff = datetime.utcnow().isoformat()
+        cutoff = datetime.now(UTC).isoformat()
         with self._get_connection() as conn:
             rows = conn.execute(
                 """
@@ -204,7 +204,7 @@ class SignalStorage:
                 SET status = ?, updated_at = ?
                 WHERE id = ?
             """,
-                (status.value, datetime.utcnow().isoformat(), signal_id),
+                (status.value, datetime.now(UTC).isoformat(), signal_id),
             )
             conn.commit()
 
@@ -225,8 +225,10 @@ class SignalStorage:
                     AVG(json_extract(outcome_json, '$.simulated_pnl_pct')) as avg_pnl_pct,
                     MIN(json_extract(outcome_json, '$.simulated_pnl_pct')) as min_pnl_pct,
                     MAX(json_extract(outcome_json, '$.simulated_pnl_pct')) as max_pnl_pct,
-                    SUM(CASE WHEN json_extract(outcome_json, '$.simulated_pnl_pct') > 0 THEN 1 ELSE 0 END) as winners,
-                    SUM(CASE WHEN json_extract(outcome_json, '$.simulated_pnl_pct') <= 0 THEN 1 ELSE 0 END) as losers
+                    SUM(CASE WHEN json_extract(outcome_json, '$.simulated_pnl_pct') > 0
+                        THEN 1 ELSE 0 END) as winners,
+                    SUM(CASE WHEN json_extract(outcome_json, '$.simulated_pnl_pct') <= 0
+                        THEN 1 ELSE 0 END) as losers
                 FROM signals
                 WHERE status = 'migrated'
                 AND json_extract(outcome_json, '$.simulated_pnl_pct') IS NOT NULL

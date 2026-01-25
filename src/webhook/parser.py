@@ -1,5 +1,6 @@
 """Parse Helius webhook transactions into structured events."""
 
+import contextlib
 from datetime import datetime
 from typing import Any
 
@@ -84,10 +85,8 @@ class EventParser:
         # Parse timestamp
         timestamp = None
         if tx.get("timestamp"):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 timestamp = datetime.fromtimestamp(tx["timestamp"])
-            except (ValueError, TypeError):
-                pass
 
         if event_type == EventType.TOKEN_CREATED:
             return self._build_token_created(tx, signature, slot, timestamp)

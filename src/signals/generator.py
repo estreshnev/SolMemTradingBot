@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import structlog
 
-from src.config.settings import FilterThresholds, Settings
+from src.config.settings import Settings
 from src.models.events import CurveProgressEvent, TokenCreatedEvent
 from src.signals.models import Signal
 from src.signals.storage import SignalStorage

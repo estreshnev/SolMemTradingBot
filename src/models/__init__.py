@@ -1,9 +1,9 @@
 from src.models.events import (
     BaseEvent,
-    TokenCreatedEvent,
     CurveProgressEvent,
-    MigrationEvent,
     HeliusWebhookPayload,
+    MigrationEvent,
+    TokenCreatedEvent,
 )
 
 __all__ = [

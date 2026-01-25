@@ -1,8 +1,12 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class EventType(str, Enum):
@@ -17,7 +21,7 @@ class BaseEvent(BaseModel):
 
     event_type: EventType
     tx_signature: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
     slot: int | None = None
 
     # Raw data for debugging/extensibility
@@ -59,8 +63,7 @@ class MigrationEvent(BaseEvent):
 class HeliusWebhookPayload(BaseModel):
     """Raw Helius webhook payload structure."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     webhook_id: str | None = Field(default=None, alias="webhookID")
     transactions: list[dict[str, Any]] = Field(default_factory=list)
-
-    class Config:
-        populate_by_name = True

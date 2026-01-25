@@ -1,6 +1,6 @@
 """Outcome tracker - updates signals with migration and price data."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import structlog
@@ -10,6 +10,10 @@ from src.signals.models import Signal, SignalStatus
 from src.signals.storage import SignalStorage
 
 logger = structlog.get_logger()
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class OutcomeTracker:
@@ -43,7 +47,7 @@ class OutcomeTracker:
         signal.outcome.migrated = True
         signal.outcome.migration_time = event.timestamp
         signal.outcome.price_at_migration = Decimal(str(event.final_liquidity_sol))
-        signal.updated_at = datetime.utcnow()
+        signal.updated_at = _utc_now()
 
         # Note: Cannot calculate PnL at migration without actual price data
         # Migration event only has liquidity, not token price
@@ -85,7 +89,7 @@ class OutcomeTracker:
             if current_price is not None and signal.entry_price_sol:
                 # Track unrealized PnL
                 signal.calculate_simulated_pnl(current_price)
-                signal.updated_at = datetime.utcnow()
+                signal.updated_at = _utc_now()
                 self.storage.save(signal)
                 updated.append(signal)
 
@@ -102,14 +106,14 @@ class OutcomeTracker:
 
         Returns count of expired signals.
         """
-        cutoff = datetime.utcnow() - timedelta(hours=self.expiry_hours)
+        cutoff = _utc_now() - timedelta(hours=self.expiry_hours)
         pending = self.storage.get_pending(limit=1000)
 
         expired_count = 0
         for signal in pending:
             if signal.signal_time < cutoff:
                 signal.status = SignalStatus.EXPIRED
-                signal.updated_at = datetime.utcnow()
+                signal.updated_at = _utc_now()
                 self.storage.save(signal)
                 expired_count += 1
 
@@ -117,7 +121,7 @@ class OutcomeTracker:
                     "signal_expired",
                     signal_id=signal.id,
                     token=signal.token_address,
-                    age_hours=(datetime.utcnow() - signal.signal_time).total_seconds() / 3600,
+                    age_hours=(_utc_now() - signal.signal_time).total_seconds() / 3600,
                 )
 
         if expired_count:
@@ -135,7 +139,7 @@ class OutcomeTracker:
 
         for signal in pending_signals:
             signal.status = SignalStatus.FAILED
-            signal.updated_at = datetime.utcnow()
+            signal.updated_at = _utc_now()
             # Set PnL to -100% for rugs
             signal.outcome.simulated_pnl_pct = -100.0
             signal.outcome.simulated_pnl_sol = -signal.simulated_buy_sol

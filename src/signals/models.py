@@ -1,11 +1,15 @@
 """Signal models for paper trading analysis."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class SignalStatus(str, Enum):
@@ -42,7 +46,7 @@ class Signal(BaseModel):
 
     # Trigger event info
     trigger_tx_signature: str
-    signal_time: datetime = Field(default_factory=datetime.utcnow)
+    signal_time: datetime = Field(default_factory=_utc_now)
 
     # State at signal time (from filters)
     entry_curve_progress_pct: float
@@ -61,8 +65,8 @@ class Signal(BaseModel):
     outcome: SignalOutcome = Field(default_factory=SignalOutcome)
 
     # Tracking
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
     # Raw data for debugging
     raw_event: dict[str, Any] | None = Field(default=None, exclude=True)
@@ -95,4 +99,4 @@ class Signal(BaseModel):
                 (exit_value - self.simulated_buy_sol) / self.simulated_buy_sol * 100
             )
 
-        self.updated_at = datetime.utcnow()
+        self.updated_at = _utc_now()

@@ -43,6 +43,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "ASYNC", "B", "SIM"]
+ignore = ["UP046"]  # Generic[T] style is still valid, new type params optional
 
 [tool.mypy]
 python_version = "3.12"
