@@ -7,13 +7,13 @@
 - [x] Project scaffolding (pyproject.toml, src/ structure, Docker)
 - [x] Config system (Pydantic Settings, YAML loading)
 - [x] Webhook server (FastAPI POST /webhook endpoint)
-- [x] Helius payload parser → structured events (placeholder, needs real payload analysis)
+- [x] Helius payload parser → structured events (real Helius format implemented)
 - [x] Event models (TokenCreated, CurveProgress, Migration)
 - [x] Basic filters (liquidity, dev holds, curve progress thresholds)
 - [x] Idempotency layer (tx_signature deduplication)
 - [x] Structured logging (structlog JSON)
 - [x] Test suite (pytest, basic webhook tests)
-- [ ] Local testing (ngrok + devnet events)
+- [x] Local testing (ngrok + mainnet Pump.fun events)
 
 **Deliverable**: Bot logs all Pump.fun events with filtering applied
 

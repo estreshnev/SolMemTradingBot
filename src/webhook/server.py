@@ -169,6 +169,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if settings.log_level.upper() == "DEBUG":
                 logger.debug("raw_webhook_payload", payload=raw_body)
 
+            # Helius sends a list of transactions directly, not wrapped in a dict
+            # Normalize to our expected format
+            if isinstance(raw_body, list):
+                raw_body = {"transactions": raw_body}
+
             payload = HeliusWebhookPayload.model_validate(raw_body)
             result = await handler.handle(payload)
             return JSONResponse(content=result, status_code=status.HTTP_200_OK)
