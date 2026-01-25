@@ -1,8 +1,8 @@
-# Raydium Signal Bot Configuration
+# Pump.fun Migration Signal Bot Configuration
 # Copy to config.yaml and customize
 #
-# IMPORTANT: All financial calculations use ACTUAL data only.
-# No estimates or fallbacks - if real data unavailable, value is null.
+# IMPORTANT: All data comes from Dexscreener API.
+# No fallback/estimated values - if data unavailable, signal is skipped.
 
 mode: dry-run  # dry-run | devnet | mainnet
 log_level: INFO
@@ -12,20 +12,19 @@ webhook:
   port: 8000
   secret: null  # Helius webhook secret (optional)
 
-rpc:
-  url: "https://api.mainnet-beta.solana.com"
-  timeout_ms: 5000
+# Signal filtering thresholds - ALL CONFIGURABLE
+filters:
+  min_market_cap_usd: 10000   # MC > $10,000
+  min_volume_1h_usd: 5000     # 1h volume > $5,000
+  max_age_minutes: 30         # Pool age < 30 minutes
+
+# Dexscreener API settings
+dexscreener:
+  base_url: "https://api.dexscreener.com"
+  timeout_seconds: 10.0
   max_retries: 3
 
-# Signal filtering thresholds
-filters:
-  min_market_cap_usd: 10000     # MC > $10,000
-  min_volume_24h_usd: 5000      # 24h volume > $5,000
-  max_top10_holders_pct: 30     # Top 10 holders < 30%
-  min_liquidity_usd: 5000       # Liquidity > $5,000
-  max_pool_age_hours: 24        # Only new pools
-
-# Telegram notifications
+# Telegram notifications (coming soon)
 telegram:
   enabled: false
   rate_limit_per_minute: 20

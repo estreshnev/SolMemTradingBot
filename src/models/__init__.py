@@ -1,8 +1,9 @@
-"""Pydantic models for Raydium pool detection."""
+"""Pydantic models for Pump.fun migration detection."""
 
-from src.models.events import HeliusWebhookPayload, RaydiumPoolCreated
+from src.models.events import HeliusWebhookPayload, MigrationEvent, SignalEvent
 
 __all__ = [
     "HeliusWebhookPayload",
-    "RaydiumPoolCreated",
+    "MigrationEvent",
+    "SignalEvent",
 ]

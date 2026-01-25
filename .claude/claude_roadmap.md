@@ -1,107 +1,53 @@
 # Project Roadmap
 
-## Project Pivot Notice
-
-**Original**: Pump.fun sniper bot
-**New Direction**: Raydium signal bot with ML scoring
+## Current: Pump.fun Migration Signal Bot
 
 ---
 
 ## Stage 1: Core Infrastructure ✅ COMPLETE
 
-**Goal**: Basic webhook processing and project structure
-
-- [x] Project scaffolding (pyproject.toml, src/ structure, Docker)
-- [x] Config system (Pydantic Settings, YAML loading)
-- [x] Webhook server (FastAPI POST /webhook endpoint)
-- [x] Idempotency layer (tx_signature deduplication)
-- [x] Structured logging (structlog JSON)
-- [x] Test suite (pytest)
-- [x] CLI tools (setup_helius_webhook.py)
-- [x] Code cleanup for Raydium focus
+- [x] Project scaffolding
+- [x] Config system (Pydantic Settings, YAML)
+- [x] Webhook server (FastAPI)
+- [x] Idempotency layer
+- [x] Structured logging
+- [x] Test suite
 
 ---
 
-## Stage 2: Raydium Pool Detection ← CURRENT
+## Stage 2: Migration Detection + Dexscreener ✅ COMPLETE
 
-**Goal**: Detect new Raydium pool creations via Helius webhook
-
-- [x] Configure Helius webhook for Raydium programs
-- [ ] Parse pool creation events from Helius payload
-- [ ] Extract token pair info (base token, quote token)
-- [ ] Extract pool address and initial liquidity
-- [ ] Store detected pools in SQLite
-
-**Raydium Programs**:
-- AMM: `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`
-- CLMM: `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK`
+- [x] Helius webhook for Pump.fun program
+- [x] MigrationParser - detect migrations
+- [x] Extract token_mint from transactions
+- [x] DexscreenerClient - fetch pair data
+- [x] Filter by MC, 1h volume, age
+- [x] Configurable thresholds in config.yaml
+- [x] Log signals to console
 
 ---
 
-## Stage 3: Data Enrichment
+## Stage 3: Telegram Notifications ← NEXT
 
-**Goal**: Fetch additional data from external sources
-
-- [ ] Dexscreener API integration
-  - [ ] Get market cap (MC)
-  - [ ] Get 24h volume
-  - [ ] Get pool age
-  - [ ] Get price and liquidity
-- [ ] RPC holder analysis
-  - [ ] Fetch top token holders
-  - [ ] Calculate top 10 holders percentage
-  - [ ] Detect concentrated holdings
+- [ ] Telegram bot integration
+- [ ] Send signals to chat/channel
+- [ ] Rate limiting
+- [ ] Error handling
 
 ---
 
-## Stage 4: Filtering & Scoring
+## Stage 4: Refinement
 
-**Goal**: Filter signals and calculate quality score
-
-- [ ] Configurable filter thresholds:
-  - [ ] MC > $10,000
-  - [ ] Volume > $5,000
-  - [ ] Top 10 holders < 30%
-  - [ ] Liquidity > $5,000
-  - [ ] Pool age < 24h
-- [ ] Basic scoring system (weighted factors)
-- [ ] Score persistence for ML training data
+- [ ] Test with live migrations
+- [ ] Tune filter thresholds
+- [ ] Add more signal details
+- [ ] Improve migration detection accuracy
 
 ---
 
-## Stage 5: Telegram Notifications
+## Future
 
-**Goal**: Send filtered signals to Telegram
-
-- [ ] Telegram bot integration (python-telegram-bot)
-- [ ] Signal message formatting
-  - [ ] Token name/symbol
-  - [ ] Contract address
-  - [ ] MC, Volume, Age
-  - [ ] Top holders %
-  - [ ] Score
-  - [ ] Dexscreener link
-- [ ] Rate limiting (avoid spam)
-- [ ] Error handling and retries
-
----
-
-## Stage 6: ML Scoring (Future)
-
-**Goal**: Machine learning based signal scoring
-
-- [ ] Data collection pipeline
-- [ ] Feature engineering
-- [ ] Model training (outcome prediction)
-- [ ] Model serving integration
-- [ ] A/B testing framework
-
----
-
-## Future Expansions
-
-- Multi-DEX support (Orca, Meteora)
-- Social signals (Twitter, Telegram mentions)
-- Wallet tracking (smart money follows)
-- Auto-trading integration
-- Dashboard/UI for signal review
+- Holder analysis (RPC)
+- ML scoring
+- Multi-DEX support
+- Dashboard/UI

@@ -9,11 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Solana memecoin signal bot** - Detects new Raydium pool creations, enriches with market data, filters by quality metrics, and sends Telegram notifications. ML scoring planned for future.
+**Pump.fun Migration Signal Bot** - Detects Pump.fun token migrations to Raydium/PumpSwap, enriches with Dexscreener data, filters by configurable thresholds, and logs signals (Telegram coming soon).
 
 **Data Flow:**
 ```
-Helius Webhook (Raydium pool) → Dexscreener (MC/Vol) → RPC (holders) → Filters → Telegram
+Helius Webhook (Pump.fun) → Detect Migration → Extract token_mint → Dexscreener API → Filter (MC/Vol/Age) → Log Signal
 ```
 
 ## Tech Stack
@@ -23,7 +23,6 @@ Helius Webhook (Raydium pool) → Dexscreener (MC/Vol) → RPC (holders) → Fil
 - Pydantic (validation/settings)
 - structlog (JSON logging)
 - httpx (async HTTP client)
-- python-telegram-bot (planned)
 
 ## Commands
 
@@ -56,25 +55,26 @@ python scripts/setup_helius_webhook.py --delete <id>        # Delete webhook
 
 ## Architecture
 
-### Target Architecture
+### Current Flow
 
 ```
-Helius Webhook (Raydium pool creation)
+Helius Webhook (Pump.fun program)
          ↓
-    Pool Detection (src/webhook/)
+    Migration Detection (src/webhook/server.py)
+    - source == "PUMP_FUN"
+    - Extract token_mint
+    - Check for Raydium/PumpSwap involvement
          ↓
-    Data Enrichment (src/enrichment/) [TODO]
-    ├── Dexscreener API → MC, Volume, Age, Price
-    └── RPC → Top 10 holders %
+    Dexscreener Enrichment (src/enrichment/dexscreener.py)
+    - Fetch pair data for token
+    - Get MC, 1h volume, age
          ↓
-    Filters (src/filters/)
-    ├── MC > $10,000
-    ├── Volume > $5,000
-    └── Top 10 holders < 30%
+    Filter (configurable thresholds)
+    - MC > min_market_cap_usd
+    - Vol(1h) > min_volume_1h_usd
+    - Age < max_age_minutes
          ↓
-    Score Calculation
-         ↓
-    Telegram Signal (src/telegram/) [TODO]
+    Log Signal (Telegram coming soon)
 ```
 
 ### Project Structure
@@ -84,59 +84,55 @@ Helius Webhook (Raydium pool creation)
 ├── .claude/           # Claude Code instructions and memory
 ├── config/            # YAML config (config.example.yaml)
 ├── docker/            # Dockerfile and docker-compose
-├── scripts/           # Utility scripts (setup_helius_webhook.py)
+├── scripts/           # setup_helius_webhook.py
 ├── src/
 │   ├── config/        # Pydantic Settings, YAML loading
-│   ├── filters/       # Signal filtering logic (base classes)
-│   ├── models/        # Pydantic models (RaydiumPoolCreated)
+│   ├── enrichment/    # Dexscreener API client
+│   ├── filters/       # Filter base classes (for future use)
+│   ├── models/        # MigrationEvent, SignalEvent
 │   ├── utils/         # Logging setup
-│   └── webhook/       # FastAPI server, idempotency
+│   └── webhook/       # FastAPI server, MigrationParser
 └── tests/             # pytest tests
 ```
 
 ## Filter Thresholds
 
-Default thresholds (configurable in config.yaml):
-- **Market Cap**: > $10,000
-- **24h Volume**: > $5,000
-- **Top 10 Holders**: < 30%
-- **Liquidity**: > $5,000
-- **Pool Age**: < 24 hours
+All configurable in config.yaml:
+- **min_market_cap_usd**: 10000 (MC > $10,000)
+- **min_volume_1h_usd**: 5000 (1h Vol > $5,000)
+- **max_age_minutes**: 30 (Age < 30 min)
 
 ## External APIs
 
 | API | Purpose | Endpoint |
 |-----|---------|----------|
-| Helius | Pool creation events | Webhook |
-| Dexscreener | MC, Volume, Price | `api.dexscreener.com` |
-| Solana RPC | Holder analysis | Configurable |
-| Telegram | Send signals | Bot API |
+| Helius | Pump.fun events | Webhook |
+| Dexscreener | MC, Volume, Age | `api.dexscreener.com` |
 
 ## Security
 
 **NEVER commit secrets to git.** Required in `.env`:
 - `BOT_HELIUS_API_KEY` - Helius API key
-- `BOT_TELEGRAM_TOKEN` - Telegram bot token
-- `BOT_TELEGRAM_CHAT_ID` - Target chat/channel ID
-- `BOT_RPC_URL` - Solana RPC endpoint
+- `BOT_TELEGRAM_TOKEN` - Telegram bot token (future)
+- `BOT_TELEGRAM_CHAT_ID` - Target chat ID (future)
 
 ## Data Accuracy
 
 **NEVER use estimated/fallback values for prices, MC, or financial data.**
 
-- Only use data from authoritative sources (Dexscreener, RPC)
-- If real data unavailable → return `None`, never guess
+- Only use data from Dexscreener API
+- If data unavailable → skip signal, never guess
 - Wrong data is worse than no data
 
 ## Key Patterns
 
-- **Reliability**: Exponential backoff retries, timeouts
+- **Reliability**: Retries with backoff for Dexscreener
 - **Observability**: Every event logged with context
 - **Validation**: Strict Pydantic validation
-- **Rate Limiting**: Respect API rate limits
+- **Idempotency**: tx_signature deduplication
 
 ## Testing
 
 - pytest with coverage
-- Each module runnable/testable independently
-- Mock external APIs in tests
+- Mock Dexscreener in unit tests
+- Test with ngrok + real Helius webhooks

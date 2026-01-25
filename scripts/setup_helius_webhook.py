@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup Helius webhook for Raydium pool monitoring.
+Setup Helius webhook for Pump.fun migration monitoring.
 
 Usage:
     python scripts/setup_helius_webhook.py                      # List webhooks
@@ -24,15 +24,14 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 HELIUS_API_KEY = os.getenv("BOT_HELIUS_API_KEY")
 
-# Raydium program IDs
-RAYDIUM_AMM_PROGRAM = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-RAYDIUM_CLMM_PROGRAM = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+# Pump.fun program ID - monitors migrations to Raydium/PumpSwap
+PUMP_FUN_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 
 HELIUS_API_BASE = "https://api.helius.xyz/v0"
 
 
 async def create_webhook(webhook_url: str) -> dict:
-    """Create a Helius webhook for Raydium pool events."""
+    """Create a Helius webhook for Pump.fun migration events."""
     if not HELIUS_API_KEY:
         raise ValueError("BOT_HELIUS_API_KEY not set in .env")
 
@@ -43,7 +42,7 @@ async def create_webhook(webhook_url: str) -> dict:
             json={
                 "webhookURL": webhook_url,
                 "transactionTypes": ["ANY"],
-                "accountAddresses": [RAYDIUM_AMM_PROGRAM, RAYDIUM_CLMM_PROGRAM],
+                "accountAddresses": [PUMP_FUN_PROGRAM],
                 "webhookType": "enhanced",
             },
         )
@@ -103,9 +102,8 @@ async def main() -> None:
         return
 
     webhook_url = sys.argv[1]
-    print(f"Creating webhook for Raydium → {webhook_url}")
-    print(f"  AMM Program: {RAYDIUM_AMM_PROGRAM}")
-    print(f"  CLMM Program: {RAYDIUM_CLMM_PROGRAM}")
+    print(f"Creating webhook for Pump.fun migrations → {webhook_url}")
+    print(f"  Pump.fun Program: {PUMP_FUN_PROGRAM}")
 
     result = await create_webhook(webhook_url)
     print(f"\nWebhook created!")

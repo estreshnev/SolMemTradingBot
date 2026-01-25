@@ -1,107 +1,77 @@
 # Claude Memory
 
-Persistent context for Claude Code sessions. Update this file when important decisions are made or patterns established.
+Persistent context for Claude Code sessions.
 
 ## Project Context
 
-- **Type**: Solana memecoin signal bot (Raydium pool detection)
+- **Type**: Pump.fun migration signal bot
 - **Language**: Python 3.12 with strict typing
 - **User**: Personal use, single instance
-- **Goal**: Detect new Raydium pools → enrich with data → filter → send Telegram signals
+- **Goal**: Detect Pump.fun migrations → enrich with Dexscreener → filter → signal
 
-## Project Pivot (2026-01-25)
+## Current Implementation
 
-**Changed from**: Pump.fun sniper bot (auto-trading)
-**Changed to**: Raydium signal bot with ML scoring (notifications only)
-
-**Reason**: Focus on signal quality and ML analysis before any trading
+**Flow:**
+```
+Helius Webhook (Pump.fun)
+         ↓
+    MigrationParser.parse()
+    - source == "PUMP_FUN"
+    - Extract token_mint (skip SOL/USDC)
+    - Check for Raydium/PumpSwap program involvement
+         ↓
+    DexscreenerClient.get_raydium_or_pumpswap_pair()
+    - Fetch pair data
+    - Return MC, 1h vol, age
+         ↓
+    Filter (settings.filters)
+    - MC > min_market_cap_usd
+    - Vol(1h) > min_volume_1h_usd
+    - Age < max_age_minutes
+         ↓
+    Log SignalEvent
+```
 
 ## Active Decisions
 
-- Config-driven: All thresholds/behavior in YAML, never hardcoded
-- **Signal-only mode**: No auto-trading, just Telegram notifications
-- Idempotency via `tx_signature` to handle duplicate webhooks
-- **Secrets in .env only**: All API keys, RPC URLs → `.env` file (gitignored)
+- **Config-driven**: All thresholds in config.yaml
+- **Signal-only mode**: No auto-trading, just logging (Telegram next)
+- **Idempotency**: tx_signature deduplication
+- **Secrets in .env**: API keys only in .env file
 
 ## Critical: No Fallback Calculations
 
-**NEVER use estimated/fallback values for prices, MC, or any financial data.**
+**NEVER use estimated/fallback values for MC, volume, or any financial data.**
 
-- If actual data is unavailable, return `None` - do not guess
-- Only use data from authoritative sources (Dexscreener, RPC)
+- If Dexscreener data unavailable → skip signal
+- Only use real data from Dexscreener API
 - Wrong data is worse than no data
-
-## Data Flow
-
-```
-Helius Webhook (Raydium pool creation)
-         ↓
-    Pool Detection (src/webhook/)
-         ↓
-    Data Enrichment [TODO: src/enrichment/]
-    ├── Dexscreener → MC, Volume, Age, Price
-    └── RPC → Top 10 holders %
-         ↓
-    Filters (src/filters/)
-    ├── MC > $10,000
-    ├── Volume > $5,000
-    └── Top 10 holders < 30%
-         ↓
-    Score Calculation
-         ↓
-    Telegram Signal [TODO: src/telegram/]
-```
-
-## External APIs
-
-| API | Purpose | Rate Limits |
-|-----|---------|-------------|
-| Helius | Webhook events | Based on plan |
-| Dexscreener | MC, Volume, Price | ~300/min |
-| Solana RPC | Holder analysis | Based on provider |
-| Telegram | Send signals | 30 msg/sec |
 
 ## Filter Thresholds (Configurable)
 
 ```yaml
 filters:
-  min_market_cap_usd: 10000
-  min_volume_24h_usd: 5000
-  max_top10_holders_pct: 30
-  min_liquidity_usd: 5000
-  max_pool_age_hours: 24  # Only new pools
+  min_market_cap_usd: 10000   # MC > $10k
+  min_volume_1h_usd: 5000     # 1h Vol > $5k
+  max_age_minutes: 30         # Age < 30 min
 ```
+
+## Program IDs
+
+- **Pump.fun**: `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`
+- **Raydium AMM**: `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`
+- **Raydium CLMM**: `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK`
+- **PumpSwap**: `pSwpGyAJiLMTUidSTPXhNFyJz3aLH41mGqhW3s1hkLd`
 
 ## Code Style
 
-- async/await everywhere (no blocking calls)
-- Pydantic models for all data structures
-- structlog with JSON output for all logging
-- Type hints required on all functions
+- async/await everywhere
+- Pydantic models for all data
+- structlog JSON logging
+- Type hints required
 
-## Architecture Notes
+## Next Steps
 
-**Single-instance design**: Personal use only. SQLite for storage. No need for horizontal scaling.
-
-## Raydium Program IDs
-
-- **AMM**: `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`
-- **CLMM**: `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK`
-
-## Current Project Structure
-
-```
-src/
-├── config/        # Settings (FilterThresholds, TelegramConfig)
-├── filters/       # BaseFilter, FilterChain, FilterResult
-├── models/        # HeliusWebhookPayload, RaydiumPoolCreated
-├── utils/         # Logging setup (structlog)
-└── webhook/       # FastAPI server, IdempotencyStore
-```
-
-## Next Steps (Stage 2)
-
-1. Implement Raydium pool detection parser
-2. Create `src/enrichment/` for Dexscreener + RPC
-3. Create `src/telegram/` for notifications
-4. Implement filters with new thresholds
+1. Add Telegram notifications
+2. Test with live Pump.fun migrations
+3. Tune filter thresholds based on results
