@@ -30,6 +30,8 @@
 - [x] Integration with webhook handler (automatic signal processing)
 - [x] Config section for signals (enabled, db_path, simulated_buy_sol, expiry_hours)
 - [x] API endpoints for analysis (/signals/stats, /signals/recent)
+- [x] Price calculation from swap data (tokenTransfers + nativeTransfers)
+- [x] Restart resilience (load signaled tokens from DB on startup)
 - [ ] Price polling for pending signals (periodic curve progress checks)
 - [ ] Analysis scripts/notebook for reviewing signal performance
 - [ ] Parameter optimization based on collected data

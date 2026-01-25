@@ -31,9 +31,37 @@ Persistent context for Claude Code sessions. Update this file when important dec
 - Tracking simulated PnL for strategy validation
 - Tuning filter parameters based on real data
 
+## Architecture Notes
+
+**Single-instance design**: This bot is for personal use only. No need for horizontal scaling, distributed state, or complex orchestration. SQLite is fine for signal storage. If scaling becomes needed later, refactor to Postgres/Redis.
+
 ## Session Notes
 
-### 2025-01-25: Signals Module + Live Helius Integration
+### 2026-01-25: Price Calculation + Restart Resilience
+
+**Price calculation from swap data:**
+- Helius `events` field is empty `{}` - no direct price info
+- Calculate from tokenTransfers + nativeTransfers:
+  ```
+  token_price = SOL_amount / token_amount
+  market_cap = token_price * 1,000,000,000  (Pump.fun total supply)
+  ```
+- Added `token_price_sol` and `token_amount` to CurveProgressEvent
+- Signal generator uses price for entry tracking
+
+**Restart resilience:**
+- `SignalGenerator._load_signaled_tokens()` loads from DB on startup
+- Prevents duplicate signals after server restart
+- Loads last 24h signals (configurable)
+
+**Live testing results:**
+- 400+ signals captured from real Pump.fun activity
+- Price and market cap correctly calculated
+- Signals persist across restarts
+
+---
+
+### 2026-01-25: Signals Module + Live Helius Integration
 
 **Added signals module for paper trading:**
 ```
