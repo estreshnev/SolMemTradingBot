@@ -16,6 +16,16 @@ Persistent context for Claude Code sessions. Update this file when important dec
 - Multiple RPC endpoints with failover for reliability
 - **Secrets in .env only**: All API keys, private keys, RPC URLs with keys → `.env` file (gitignored). Use `BOT_` prefix. Never hardcode or commit secrets.
 
+## Critical: No Fallback Calculations
+
+**NEVER use estimated/fallback values for prices, PnL, or any financial data.** This is real money.
+
+- If actual price data is unavailable, return `None` - do not guess
+- No "rough estimates" based on liquidity or other proxies
+- No circular calculations (e.g., deriving price from market_cap that was derived from price)
+- Only use values directly from swap transactions: `token_price = SOL_amount / token_amount`
+- If we can't get real data, skip the calculation entirely - wrong data is worse than no data
+
 ## Code Style
 
 - async/await everywhere (no blocking calls)

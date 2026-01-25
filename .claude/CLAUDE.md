@@ -87,6 +87,16 @@ All thresholds and behavior controlled via config (not hardcoded):
 
 **NEVER commit secrets to git.** All API keys and private keys stored in `.env` file (gitignored). Copy `.env.example` to `.env` and fill in real values. Use `BOT_` prefix for env vars.
 
+## Financial Data Accuracy
+
+**NEVER use estimated/fallback values for prices, PnL, or financial calculations.** This is real money.
+
+- Only use actual price from swap data: `price = SOL_amount / token_amount`
+- If real data unavailable → return `None`, never guess
+- No "rough estimates" from liquidity or other proxies
+- No circular calculations (price → market_cap → price)
+- Wrong data is worse than no data
+
 ## Key Patterns
 
 - **Reliability**: Exponential backoff retries, timeouts, circuit breakers
