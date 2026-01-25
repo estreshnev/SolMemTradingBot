@@ -21,13 +21,18 @@ config/config.yaml
 *.swp
 *.swo
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Testing
 .coverage
 htmlcov/
 .pytest_cache/
 .mypy_cache/
 
+# Runtime data
+data/
+
 # OS
 .DS_Store
 Thumbs.db
-data/

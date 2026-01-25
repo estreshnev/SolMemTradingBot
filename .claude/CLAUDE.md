@@ -44,6 +44,11 @@ mypy src/
 # Local webhook testing
 ngrok http 8000
 
+# Helius webhook management
+python scripts/setup_helius_webhook.py                      # List webhooks
+python scripts/setup_helius_webhook.py <url>                # Create webhook
+python scripts/setup_helius_webhook.py --delete <id>        # Delete webhook
+
 # Docker
 docker-compose -f docker/docker-compose.yml up --build
 ```
@@ -61,18 +66,31 @@ Helius Webhook → POST /webhook → EventParser → Filters → Logger
 - **Filters**: Config-driven thresholds applied before processing
 - **Idempotency**: Dedupe by tx_signature
 
-### Planned Modules
+### Project Structure
+
+```
+.
+├── .claude/           # Claude Code instructions and memory
+├── config/            # YAML config (config.example.yaml)
+├── docker/            # Dockerfile and docker-compose
+├── scripts/           # Utility scripts (Helius webhook setup)
+├── src/
+│   ├── config/        # Pydantic Settings, YAML loading
+│   ├── filters/       # Token filtering logic (thresholds)
+│   ├── models/        # Pydantic models (events)
+│   ├── signals/       # Paper trading: signal generation, storage, tracking
+│   ├── utils/         # Logging setup
+│   └── webhook/       # FastAPI server, Helius parsing, idempotency
+└── tests/             # pytest tests
+```
+
+### Planned Modules (not yet implemented)
 
 ```
 src/
-├── config/        # YAML/JSON config loading, Pydantic Settings
-├── webhook/       # FastAPI server, Helius payload parsing
-├── filters/       # Token filtering logic (thresholds, blacklists)
 ├── trading/       # Buy/sell execution (bonding curve, Jupiter)
 ├── rpc/           # Multi-endpoint RPC client with retries
-├── models/        # Pydantic models for events, tokens, trades
-├── metrics/       # Prometheus metrics export
-└── utils/         # Retry decorators, circuit breakers
+└── metrics/       # Prometheus metrics export
 ```
 
 ## Config System
