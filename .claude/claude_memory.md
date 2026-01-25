@@ -4,30 +4,26 @@ Persistent context for Claude Code sessions.
 
 ## Project Context
 
-- **Type**: Pump.fun migration signal bot
+- **Type**: Solana memecoin signal bot
 - **Language**: Python 3.12 with strict typing
 - **User**: Personal use, single instance
-- **Goal**: Detect Pump.fun migrations → enrich with Dexscreener → filter → signal
+- **Current**: Pump.fun migrations (first source)
+- **Future**: BONK, BAGS, other Solana tokens
 
-## Current Implementation
+## Current Implementation (Pump.fun)
 
-**Flow:**
 ```
 Helius Webhook (Pump.fun)
          ↓
     MigrationParser.parse()
     - source == "PUMP_FUN"
-    - Extract token_mint (skip SOL/USDC)
-    - Check for Raydium/PumpSwap program involvement
+    - Extract token_mint
+    - Check for Raydium/PumpSwap
          ↓
     DexscreenerClient.get_raydium_or_pumpswap_pair()
-    - Fetch pair data
-    - Return MC, 1h vol, age
+    - Fetch MC, 1h vol, age
          ↓
     Filter (settings.filters)
-    - MC > min_market_cap_usd
-    - Vol(1h) > min_volume_1h_usd
-    - Age < max_age_minutes
          ↓
     Log SignalEvent
 ```
@@ -35,19 +31,18 @@ Helius Webhook (Pump.fun)
 ## Active Decisions
 
 - **Config-driven**: All thresholds in config.yaml
-- **Signal-only mode**: No auto-trading, just logging (Telegram next)
+- **Signal-only mode**: No auto-trading
 - **Idempotency**: tx_signature deduplication
-- **Secrets in .env**: API keys only in .env file
+- **Secrets in .env**: API keys only
 
-## Critical: No Fallback Calculations
+## Critical: No Fallback Data
 
-**NEVER use estimated/fallback values for MC, volume, or any financial data.**
+**NEVER use estimated/fallback values for MC, volume, or financial data.**
 
 - If Dexscreener data unavailable → skip signal
-- Only use real data from Dexscreener API
 - Wrong data is worse than no data
 
-## Filter Thresholds (Configurable)
+## Filter Thresholds
 
 ```yaml
 filters:
@@ -69,9 +64,3 @@ filters:
 - Pydantic models for all data
 - structlog JSON logging
 - Type hints required
-
-## Next Steps
-
-1. Add Telegram notifications
-2. Test with live Pump.fun migrations
-3. Tune filter thresholds based on results
