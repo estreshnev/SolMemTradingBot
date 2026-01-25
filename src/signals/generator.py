@@ -76,6 +76,8 @@ class SignalGenerator:
             signal_id=signal.id,
             curve_pct=event.curve_progress_pct,
             liquidity=event.liquidity_sol,
+            price=float(signal.entry_price_sol) if signal.entry_price_sol else None,
+            market_cap=float(signal.entry_market_cap_sol) if signal.entry_market_cap_sol else None,
         )
 
         return signal
@@ -152,16 +154,16 @@ class SignalGenerator:
         return None
 
     def _estimate_price(self, event: CurveProgressEvent) -> Decimal | None:
-        """Estimate token price from curve data.
+        """Get token price from swap data or estimate from market cap."""
+        # Prefer direct price from swap calculation
+        if event.token_price_sol and event.token_price_sol > 0:
+            return Decimal(str(event.token_price_sol))
 
-        This is a placeholder - real implementation would use
-        the bonding curve formula.
-        """
+        # Fallback: estimate from market cap
         if event.market_cap_sol and event.market_cap_sol > 0:
-            # Very rough estimate: price = market_cap / total_supply
-            # Pump.fun typically has 1B total supply
             total_supply = Decimal("1_000_000_000")
             return Decimal(str(event.market_cap_sol)) / total_supply
+
         return None
 
     def get_signaled_tokens(self) -> set[str]:

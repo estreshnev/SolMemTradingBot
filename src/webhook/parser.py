@@ -166,13 +166,14 @@ class EventParser:
         native_transfers = tx.get("nativeTransfers", [])
 
         token_address = ""
-        sol_amount = 0.0
+        token_amount = 0.0
 
-        # Find pump.fun token
+        # Find pump.fun token and amount
         for transfer in token_transfers:
             mint = transfer.get("mint", "")
             if mint.endswith(self.PUMP_TOKEN_SUFFIX):
                 token_address = mint
+                token_amount = abs(float(transfer.get("tokenAmount", 0)))
                 break
 
         if not token_address:
@@ -182,25 +183,38 @@ class EventParser:
                     mint = tbc.get("mint", "")
                     if mint.endswith(self.PUMP_TOKEN_SUFFIX):
                         token_address = mint
+                        # Get token amount from raw amount
+                        raw = tbc.get("rawTokenAmount", {})
+                        decimals = raw.get("decimals", 6)
+                        amount = abs(int(raw.get("tokenAmount", 0)))
+                        token_amount = amount / (10**decimals)
                         break
 
         if not token_address:
             return None
 
-        # Calculate SOL moved (approximates liquidity change)
-        for transfer in native_transfers:
-            amount = abs(transfer.get("amount", 0))
-            sol_amount += amount / 1e9
+        # Find the main SOL amount (largest transfer, typically to bonding curve)
+        sol_amounts = [abs(t.get("amount", 0)) for t in native_transfers]
+        main_sol_amount = max(sol_amounts) / 1e9 if sol_amounts else 0.0
+        total_sol = sum(sol_amounts) / 1e9
 
-        # We don't have curve progress % from Helius directly
-        # This would need to be calculated from on-chain bonding curve state
-        # For now, use SOL amount as a proxy for activity
+        # Calculate price: SOL per token
+        token_price = None
+        market_cap = None
+        if token_amount > 0 and main_sol_amount > 0:
+            token_price = main_sol_amount / token_amount
+            # Pump.fun tokens have 1B total supply
+            market_cap = token_price * 1_000_000_000
+
         event = CurveProgressEvent(
             tx_signature=signature,
             slot=slot,
             token_address=token_address,
             curve_progress_pct=0.0,  # Would need RPC call to get actual progress
-            liquidity_sol=sol_amount,
+            liquidity_sol=total_sol,
+            market_cap_sol=market_cap,
+            token_price_sol=token_price,
+            token_amount=token_amount,
             raw_data=tx,
         )
         if timestamp:

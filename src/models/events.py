@@ -43,6 +43,8 @@ class CurveProgressEvent(BaseEvent):
     curve_progress_pct: float
     liquidity_sol: float
     market_cap_sol: float | None = None
+    token_price_sol: float | None = None  # Price per token in SOL
+    token_amount: float | None = None  # Tokens transferred in this swap
 
 
 class MigrationEvent(BaseEvent):
