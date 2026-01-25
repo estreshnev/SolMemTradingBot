@@ -32,6 +32,7 @@
 - [x] API endpoints for analysis (/signals/stats, /signals/recent)
 - [x] Price calculation from swap data (tokenTransfers + nativeTransfers)
 - [x] Restart resilience (load signaled tokens from DB on startup)
+- [x] Strict data accuracy: no fallback/estimated prices - only actual swap data
 - [ ] Price polling for pending signals (periodic curve progress checks)
 - [ ] Analysis scripts/notebook for reviewing signal performance
 - [ ] Parameter optimization based on collected data

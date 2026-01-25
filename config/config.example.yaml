@@ -1,5 +1,8 @@
 # Bot Configuration
 # Copy to config.yaml and customize
+#
+# IMPORTANT: All financial calculations use ACTUAL data only.
+# No estimates or fallbacks - if real price unavailable, value is null.
 
 mode: dry-run  # dry-run | devnet | mainnet
 log_level: INFO
@@ -16,20 +19,23 @@ rpc:
   timeout_ms: 5000
   max_retries: 3
 
+# Signal generation filters - tune these based on paper trading results
 filters:
-  min_liquidity_sol: 0.5
-  max_dev_holds_pct: 20.0
-  min_curve_progress_pct: 10.0
-  max_curve_progress_pct: 80.0
+  min_liquidity_sol: 0.5       # Minimum SOL liquidity to consider
+  max_dev_holds_pct: 20.0      # Max % dev can hold (not yet implemented)
+  min_curve_progress_pct: 10.0 # Min bonding curve progress %
+  max_curve_progress_pct: 80.0 # Max bonding curve progress %
 
+# Trade execution limits (for when real trading is enabled)
 limits:
-  max_sol_per_trade: 0.1
-  max_daily_loss_sol: 1.0
-  max_open_positions: 5
+  max_sol_per_trade: 0.1       # Max SOL per single trade
+  max_daily_loss_sol: 1.0      # Daily loss limit
+  max_open_positions: 5        # Max concurrent positions
 
 # Paper trading signals - captures what we would buy/sell
+# Use this to validate strategy before enabling real trades
 signals:
   enabled: true
   db_path: "data/signals.db"
-  simulated_buy_sol: 0.1  # Simulated SOL per trade
-  expiry_hours: 24  # Mark old signals as expired
+  simulated_buy_sol: 0.1       # Simulated SOL per trade for PnL calc
+  expiry_hours: 24             # Mark old signals as expired
