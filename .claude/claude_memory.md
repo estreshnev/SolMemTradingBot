@@ -4,27 +4,73 @@ Persistent context for Claude Code sessions. Update this file when important dec
 
 ## Project Context
 
-- **Type**: Solana memecoin trading bot (Pump.fun sniper)
+- **Type**: Solana memecoin signal bot (Raydium pool detection)
 - **Language**: Python 3.12 with strict typing
-- **User**: Building production-grade bot, expects reliability and safety
+- **User**: Personal use, single instance
+- **Goal**: Detect new Raydium pools → enrich with data → filter → send Telegram signals
+
+## Project Pivot (2026-01-25)
+
+**Changed from**: Pump.fun sniper bot (auto-trading)
+**Changed to**: Raydium signal bot with ML scoring (notifications only)
+
+**Reason**: Focus on signal quality and ML analysis before any trading
 
 ## Active Decisions
 
 - Config-driven: All thresholds/behavior in YAML/JSON, never hardcoded
-- Three modes: `dry-run` (log only) → `devnet` (test transactions) → `mainnet` (real trades)
+- **Signal-only mode**: No auto-trading, just Telegram notifications
 - Idempotency via `tx_signature` to handle duplicate webhooks
-- Multiple RPC endpoints with failover for reliability
-- **Secrets in .env only**: All API keys, private keys, RPC URLs with keys → `.env` file (gitignored). Use `BOT_` prefix. Never hardcode or commit secrets.
+- **Secrets in .env only**: All API keys, private keys, RPC URLs → `.env` file (gitignored)
 
 ## Critical: No Fallback Calculations
 
-**NEVER use estimated/fallback values for prices, PnL, or any financial data.** This is real money.
+**NEVER use estimated/fallback values for prices, MC, or any financial data.**
 
-- If actual price data is unavailable, return `None` - do not guess
-- No "rough estimates" based on liquidity or other proxies
-- No circular calculations (e.g., deriving price from market_cap that was derived from price)
-- Only use values directly from swap transactions: `token_price = SOL_amount / token_amount`
-- If we can't get real data, skip the calculation entirely - wrong data is worse than no data
+- If actual data is unavailable, return `None` - do not guess
+- Only use data from authoritative sources (Dexscreener, RPC)
+- Wrong data is worse than no data
+
+## Data Flow
+
+```
+Helius Webhook (Raydium pool creation)
+         ↓
+    Pool Detection
+         ↓
+    Data Enrichment
+    ├── Dexscreener → MC, Volume, Age, Price
+    └── RPC → Top 10 holders %
+         ↓
+    Filters
+    ├── MC > $10,000
+    ├── Volume > $5,000
+    └── Top 10 holders < 30%
+         ↓
+    Score Calculation
+         ↓
+    Telegram Signal
+```
+
+## External APIs
+
+| API | Purpose | Rate Limits |
+|-----|---------|-------------|
+| Helius | Webhook events | Based on plan |
+| Dexscreener | MC, Volume, Price | ~300/min |
+| Solana RPC | Holder analysis | Based on provider |
+| Telegram | Send signals | 30 msg/sec |
+
+## Filter Thresholds (Configurable)
+
+```yaml
+filters:
+  min_market_cap_usd: 10000
+  min_volume_24h_usd: 5000
+  max_top10_holders_pct: 30
+  min_liquidity_usd: 5000
+  max_pool_age_hours: 24  # Only new pools
+```
 
 ## Code Style
 
@@ -32,88 +78,16 @@ Persistent context for Claude Code sessions. Update this file when important dec
 - Pydantic models for all data structures
 - structlog with JSON output for all logging
 - Type hints required on all functions
-- Docstrings for public functions only
-
-## Current Focus
-
-**Stage 1.5: Paper Trading Signals**
-- Capturing buy signals from live Pump.fun events
-- Tracking simulated PnL for strategy validation
-- Tuning filter parameters based on real data
 
 ## Architecture Notes
 
-**Single-instance design**: This bot is for personal use only. No need for horizontal scaling, distributed state, or complex orchestration. SQLite is fine for signal storage. If scaling becomes needed later, refactor to Postgres/Redis.
+**Single-instance design**: Personal use only. SQLite for storage. No need for horizontal scaling.
 
-## Session Notes
+## Key Files to Modify
 
-### 2026-01-25: Price Calculation + Restart Resilience
-
-**Price calculation from swap data:**
-- Helius `events` field is empty `{}` - no direct price info
-- Calculate from tokenTransfers + nativeTransfers:
-  ```
-  token_price = SOL_amount / token_amount
-  market_cap = token_price * 1,000,000,000  (Pump.fun total supply)
-  ```
-- Added `token_price_sol` and `token_amount` to CurveProgressEvent
-- Signal generator uses price for entry tracking
-
-**Restart resilience:**
-- `SignalGenerator._load_signaled_tokens()` loads from DB on startup
-- Prevents duplicate signals after server restart
-- Loads last 24h signals (configurable)
-
-**Live testing results:**
-- 400+ signals captured from real Pump.fun activity
-- Price and market cap correctly calculated
-- Signals persist across restarts
-
----
-
-### 2026-01-25: Signals Module + Live Helius Integration
-
-**Added signals module for paper trading:**
-```
-src/signals/
-├── models.py    - Signal, SignalStatus, SignalOutcome
-├── storage.py   - SQLite persistence with stats queries
-├── generator.py - Evaluates events → creates buy signals
-└── tracker.py   - Updates signals on migrations, tracks PnL
-```
-
-**Fixed Helius webhook integration:**
-- Helius sends raw list `[{tx}, {tx}]`, not `{webhookID, transactions}`
-- Updated server to normalize both formats
-- Parser now extracts token address from `tokenTransfers` and `accountData`
-- Filters by `source: PUMP_FUN` to only process relevant transactions
-
-**Helius enhanced transaction format:**
-- `type`: SWAP, CREATE, UNKNOWN, WITHDRAW
-- `source`: PUMP_FUN
-- `signature`, `slot`, `timestamp`
-- `tokenTransfers`, `nativeTransfers`, `accountData`
-
-**Live testing verified:**
-- ngrok tunnel → Helius webhook → signals DB
-- 250+ signals captured from real Pump.fun activity
-- Events: curve_progress (swaps), token_created
-
-**API endpoints added:**
-- `GET /signals/stats` - win rate, avg PnL, counts by status
-- `GET /signals/recent` - recent signals with outcomes
-
-### 2025-01-24: Initial Scaffolding Complete
-
-**Created structure:**
-```
-src/
-├── config/settings.py    - Pydantic Settings with YAML support
-├── models/events.py      - Event types (TokenCreated, CurveProgress, Migration)
-├── webhook/
-│   ├── server.py         - FastAPI app with /webhook and /health
-│   ├── parser.py         - Helius payload → events
-│   └── idempotency.py    - LRU-based tx_sig deduplication
-├── filters/base.py       - FilterChain pattern for extensibility
-└── utils/logging.py      - structlog setup
-```
+For the new direction, these files need updates:
+- `src/webhook/parser.py` - Detect Raydium instead of Pump.fun
+- `src/config/settings.py` - New filter thresholds
+- `src/signals/` - Repurpose for pool signals
+- New: `src/enrichment/` - Dexscreener + RPC data fetching
+- New: `src/telegram/` - Telegram bot integration

@@ -9,16 +9,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Solana memecoin trading bot (sniper) for Pump.fun pre-migration trades. Strategy: buy on bonding curve → sell 75% pre-migration + 25% via Jupiter post-launch.
+**Solana memecoin signal bot** - Detects new Raydium pool creations, enriches with market data, filters by quality metrics, and sends Telegram notifications. ML scoring planned for future.
+
+**Data Flow:**
+```
+Helius Webhook (Raydium pool) → Dexscreener (MC/Vol) → RPC (holders) → Filters → Telegram
+```
 
 ## Tech Stack
 
 - Python 3.12, asyncio
 - FastAPI (webhook server)
 - Pydantic (validation/settings)
-- structlog (JSON logging, Prometheus-ready)
-- solana-py
-- Docker
+- structlog (JSON logging)
+- httpx (async HTTP client)
+- python-telegram-bot
+- SQLite (signal storage)
 
 ## Commands
 
@@ -31,7 +37,6 @@ uvicorn src.webhook.server:app --reload --port 8000
 
 # Run tests
 pytest
-pytest tests/unit/  # unit only
 pytest -k "test_name"  # single test
 
 # Lint & format
@@ -49,22 +54,33 @@ python scripts/setup_helius_webhook.py                      # List webhooks
 python scripts/setup_helius_webhook.py <url>                # Create webhook
 python scripts/setup_helius_webhook.py --delete <id>        # Delete webhook
 
-# Docker
-docker-compose -f docker/docker-compose.yml up --build
+# View signals
+python scripts/view_signals.py
+python scripts/view_signals.py --recent 20
 ```
 
 ## Architecture
 
-### Current Stage: Helius Webhook Integration
+### Target Architecture
 
 ```
-Helius Webhook → POST /webhook → EventParser → Filters → Logger
+Helius Webhook (Raydium pool creation)
+         ↓
+    Pool Detection (src/webhook/)
+         ↓
+    Data Enrichment (src/enrichment/)
+    ├── Dexscreener API → MC, Volume, Age, Price
+    └── RPC → Top 10 holders %
+         ↓
+    Filters (src/filters/)
+    ├── MC > $10,000
+    ├── Volume > $5,000
+    └── Top 10 holders < 30%
+         ↓
+    Score Calculation
+         ↓
+    Telegram Signal (src/telegram/)
 ```
-
-- **Webhook endpoint**: Receives Pump.fun events (token creations, bonding curve progress, migrations)
-- **Event parser**: Raw Helius payload → structured Pydantic models (token_address, curve_progress, liquidity_SOL, dev_holds)
-- **Filters**: Config-driven thresholds applied before processing
-- **Idempotency**: Dedupe by tx_signature
 
 ### Project Structure
 
@@ -73,57 +89,62 @@ Helius Webhook → POST /webhook → EventParser → Filters → Logger
 ├── .claude/           # Claude Code instructions and memory
 ├── config/            # YAML config (config.example.yaml)
 ├── docker/            # Dockerfile and docker-compose
-├── scripts/           # Utility scripts (Helius webhook setup)
+├── scripts/           # Utility scripts
 ├── src/
 │   ├── config/        # Pydantic Settings, YAML loading
-│   ├── filters/       # Token filtering logic (thresholds)
-│   ├── models/        # Pydantic models (events)
-│   ├── signals/       # Paper trading: signal generation, storage, tracking
+│   ├── enrichment/    # Dexscreener + RPC data fetching (NEW)
+│   ├── filters/       # Signal filtering logic
+│   ├── models/        # Pydantic models
+│   ├── signals/       # Signal storage and tracking
+│   ├── telegram/      # Telegram bot integration (NEW)
 │   ├── utils/         # Logging setup
-│   └── webhook/       # FastAPI server, Helius parsing, idempotency
+│   └── webhook/       # FastAPI server, Helius parsing
 └── tests/             # pytest tests
 ```
 
-### Planned Modules (not yet implemented)
+## Filter Thresholds
 
-```
-src/
-├── trading/       # Buy/sell execution (bonding curve, Jupiter)
-├── rpc/           # Multi-endpoint RPC client with retries
-└── metrics/       # Prometheus metrics export
-```
+Default thresholds (configurable in config.yaml):
+- **Market Cap**: > $10,000
+- **24h Volume**: > $5,000
+- **Top 10 Holders**: < 30%
+- **Liquidity**: > $5,000
+- **Pool Age**: < 24 hours
 
-## Config System
+## External APIs
 
-All thresholds and behavior controlled via config (not hardcoded):
-- Wallet addresses, RPC endpoints
-- Filter thresholds (min liquidity, max dev holds, curve progress)
-- Trade limits (max per-trade SOL, max loss)
-- Mode: `dry-run` | `devnet` | `mainnet`
+| API | Purpose | Endpoint |
+|-----|---------|----------|
+| Helius | Pool creation events | Webhook |
+| Dexscreener | MC, Volume, Price | `api.dexscreener.com` |
+| Solana RPC | Holder analysis | Configurable |
+| Telegram | Send signals | Bot API |
 
 ## Security
 
-**NEVER commit secrets to git.** All API keys and private keys stored in `.env` file (gitignored). Copy `.env.example` to `.env` and fill in real values. Use `BOT_` prefix for env vars.
+**NEVER commit secrets to git.** Required in `.env`:
+- `BOT_HELIUS_API_KEY` - Helius API key
+- `BOT_TELEGRAM_TOKEN` - Telegram bot token
+- `BOT_TELEGRAM_CHAT_ID` - Target chat/channel ID
+- `BOT_RPC_URL` - Solana RPC endpoint
 
-## Financial Data Accuracy
+## Data Accuracy
 
-**NEVER use estimated/fallback values for prices, PnL, or financial calculations.** This is real money.
+**NEVER use estimated/fallback values for prices, MC, or financial data.**
 
-- Only use actual price from swap data: `price = SOL_amount / token_amount`
+- Only use data from authoritative sources (Dexscreener, RPC)
 - If real data unavailable → return `None`, never guess
-- No "rough estimates" from liquidity or other proxies
-- No circular calculations (price → market_cap → price)
 - Wrong data is worse than no data
 
 ## Key Patterns
 
-- **Reliability**: Exponential backoff retries, timeouts, circuit breakers
-- **Observability**: Every event logged with context (timestamp, wallet, event_type, metrics)
-- **Safety**: Dry-run mode logs trades without execution; devnet testing before mainnet
-- **Validation**: Strict Pydantic validation; invalid events dropped with warning log
+- **Reliability**: Exponential backoff retries, timeouts
+- **Observability**: Every event logged with context
+- **Validation**: Strict Pydantic validation
+- **Rate Limiting**: Respect API rate limits
 
 ## Testing
 
-- pytest with >80% coverage target
+- pytest with coverage
 - Each module runnable/testable independently
-- Test with ngrok + devnet Pump.fun events before mainnet
+- Mock external APIs in tests

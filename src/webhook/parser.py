@@ -192,10 +192,18 @@ class EventParser:
         if not token_address:
             return None
 
-        # Find the main SOL amount (largest transfer, typically to bonding curve)
+        # Find the main SOL amount from nativeTransfers or accountData
         sol_amounts = [abs(t.get("amount", 0)) for t in native_transfers]
+
+        # Fallback: get SOL from accountData.nativeBalanceChange if nativeTransfers empty
+        if not sol_amounts:
+            for acc in tx.get("accountData", []):
+                change = acc.get("nativeBalanceChange", 0)
+                if change != 0:
+                    sol_amounts.append(abs(change))
+
         main_sol_amount = max(sol_amounts) / 1e9 if sol_amounts else 0.0
-        total_sol = sum(sol_amounts) / 1e9
+        total_sol = sum(abs(x) for x in sol_amounts) / 1e9 / 2  # Divide by 2 to avoid double counting
 
         # Calculate price: SOL per token
         token_price = None
