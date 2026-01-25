@@ -63,7 +63,7 @@ class SignalGenerator:
             entry_market_cap_sol=(
                 Decimal(str(event.market_cap_sol)) if event.market_cap_sol else None
             ),
-            entry_price_sol=self._estimate_price(event),
+            entry_price_sol=self._get_price(event),
             simulated_buy_sol=self.simulated_buy_sol,
             raw_event=event.model_dump(mode="json"),
         )
@@ -154,17 +154,10 @@ class SignalGenerator:
 
         return None
 
-    def _estimate_price(self, event: CurveProgressEvent) -> Decimal | None:
-        """Get token price from swap data or estimate from market cap."""
-        # Prefer direct price from swap calculation
+    def _get_price(self, event: CurveProgressEvent) -> Decimal | None:
+        """Get token price from swap data. Returns None if no actual price available."""
         if event.token_price_sol and event.token_price_sol > 0:
             return Decimal(str(event.token_price_sol))
-
-        # Fallback: estimate from market cap
-        if event.market_cap_sol and event.market_cap_sol > 0:
-            total_supply = Decimal("1_000_000_000")
-            return Decimal(str(event.market_cap_sol)) / total_supply
-
         return None
 
     def _load_signaled_tokens(self) -> set[str]:

@@ -45,13 +45,9 @@ class OutcomeTracker:
         signal.outcome.price_at_migration = Decimal(str(event.final_liquidity_sol))
         signal.updated_at = datetime.utcnow()
 
-        # Calculate simulated PnL if we have entry price
-        if signal.entry_price_sol:
-            # For migration, estimate exit price from final liquidity
-            # This is simplified - real impl would get actual token price
-            exit_price = self._estimate_migration_price(event)
-            if exit_price:
-                signal.calculate_simulated_pnl(exit_price)
+        # Note: Cannot calculate PnL at migration without actual price data
+        # Migration event only has liquidity, not token price
+        # PnL calculation requires RPC query for actual price (not implemented)
 
         self.storage.save(signal)
 
@@ -78,10 +74,15 @@ class OutcomeTracker:
             return []
 
         updated = []
-        current_price = self._estimate_price_from_curve(event)
+        # Only use actual price from swap data, no estimates
+        current_price = (
+            Decimal(str(event.token_price_sol))
+            if event.token_price_sol and event.token_price_sol > 0
+            else None
+        )
 
         for signal in pending_signals:
-            if current_price and signal.entry_price_sol:
+            if current_price is not None and signal.entry_price_sol:
                 # Track unrealized PnL
                 signal.calculate_simulated_pnl(current_price)
                 signal.updated_at = datetime.utcnow()
@@ -148,19 +149,3 @@ class OutcomeTracker:
             )
 
         return pending_signals
-
-    def _estimate_migration_price(self, event: MigrationEvent) -> Decimal | None:
-        """Estimate token price at migration from event data."""
-        if event.final_liquidity_sol and event.final_liquidity_sol > 0:
-            # Rough estimate based on liquidity
-            # Real implementation would query actual price
-            total_supply = Decimal("1_000_000_000")
-            return Decimal(str(event.final_liquidity_sol)) / total_supply
-        return None
-
-    def _estimate_price_from_curve(self, event: CurveProgressEvent) -> Decimal | None:
-        """Estimate current token price from curve progress event."""
-        if event.market_cap_sol and event.market_cap_sol > 0:
-            total_supply = Decimal("1_000_000_000")
-            return Decimal(str(event.market_cap_sol)) / total_supply
-        return None
