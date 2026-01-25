@@ -1,46 +1,33 @@
-# Project Roadmap
+# Roadmap
 
 ## Solana Memecoin Signal Bot
 
 ---
 
-## Stage 1: Core Infrastructure ✅
+## Stage 1: Infrastructure ✅
 
-- [x] Project scaffolding
-- [x] Config system (Pydantic Settings, YAML)
-- [x] Webhook server (FastAPI)
-- [x] Idempotency layer
+- [x] FastAPI webhook server
+- [x] Config system (Pydantic + YAML)
+- [x] Idempotency (tx_signature)
 - [x] Structured logging
-- [x] Test suite
+- [x] Tests
 
 ---
 
-## Stage 2: Pump.fun Migrations ← CURRENT
+## Stage 2: Pump.fun ← CURRENT
 
-**Goal**: Detect Pump.fun migrations, enrich with Dexscreener, filter, signal
-
-- [x] Helius webhook for Pump.fun program
-- [x] MigrationParser - detect migrations
-- [x] Extract token_mint from transactions
-- [x] DexscreenerClient - fetch pair data
-- [x] Filter by MC, 1h volume, age
-- [x] Configurable thresholds in config.yaml
-- [x] Log signals to console
-- [ ] Test with live migrations
+- [x] Helius webhook for Pump.fun
+- [x] MigrationParser
+- [x] DexscreenerClient
+- [x] Configurable filters (MC/Vol/Age)
+- [x] Signal output to console
+- [ ] Test with live data
 - [ ] Telegram notifications
 
 ---
 
-## Stage 3: Additional Sources
+## Future
 
-- [ ] BONK integration
-- [ ] BAGS integration
-- [ ] Other Solana memecoins
-
----
-
-## Stage 4: Enhancements
-
-- [ ] Holder analysis (RPC)
-- [ ] ML scoring
-- [ ] Dashboard/UI
+- Additional sources (BONK, BAGS, etc.)
+- Holder analysis
+- ML scoring
